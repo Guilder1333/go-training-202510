@@ -4,7 +4,7 @@ import "errors"
 
 var ErrUserNotFound = errors.New("user not found")
 
-type GetUserById struct {
+type User struct {
 	Id              int
 	FirstName       string
 	LastName        string
@@ -14,5 +14,7 @@ type GetUserById struct {
 }
 
 type UserService interface {
-	GetUserById(id int) (*GetUserById, error)
+	GetUserById(id int) (*User, error)
+	CreateUser(user *User) (int, error)
+	DeleteUser(id int) error
 }

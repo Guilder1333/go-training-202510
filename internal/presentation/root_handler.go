@@ -6,13 +6,11 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func NewRootHandler() http.Handler {
+func NewRootHandler(userContoller *UserController) http.Handler {
 	router := chi.NewRouter()
-	router.Get("/user", nil)
-	router.Post("/user", nil)
+	router.Get("/user", userContoller.GetUserById)
+	router.Post("/user", userContoller.CreateUser)
+	router.Delete("/user", userContoller.DeleteUserById)
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello world"))
-		w.WriteHeader(200)
-	})
+	return router
 }

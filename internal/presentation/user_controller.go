@@ -127,10 +127,28 @@ func (u *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u *UserController) DeleteUserById(w http.ResponseWriter, r *http.Request) {
-	// TODO:
-	// 1. Validate request parameters
-	// 2. Pass parameters to user service to perform delete operation
-	// 		2.1. Implement user service DeteleUser functon
-	// 3. Prepare response with results and write it.
-	// If not enough time we can finsh on the next week
+	deleteUserRequest, err := u.validator.ValidateDeleteUser(r)
+	if err != nil {
+		log.Warn().Err(err).Msg("Passed user delete by id parameters were invalid")
+		w.WriteHeader(400)
+		w.Write([]byte("request parameters validation failed"))
+		return
+	}
+
+	err = u.userService.DeleteUser(deleteUserRequest.Id)
+	if err != nil {
+		if errors.Is(err, logic.ErrUserNotFound) {
+			log.Warn().Err(err).Msg("Requesting non-existant user " + strconv.Itoa(deleteUserRequest.Id))
+			w.WriteHeader(404)
+			w.Write([]byte("user not found"))
+			return
+		}
+
+		log.Error().Err(err).Msg("Failed to delete user")
+		w.WriteHeader(500)
+		w.Write([]byte("failed to delete user"))
+		return
+	}
+
+	w.WriteHeader(204)
 }

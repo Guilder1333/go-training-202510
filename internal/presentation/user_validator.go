@@ -4,12 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"handsongo/internal/statuserror"
 	"io"
 	"net/http"
 	"strconv"
 )
-
-var errIdParameterIsMissing = errors.New("missing ID parameter")
 
 type UserValidatorImpl struct {
 }
@@ -21,12 +20,18 @@ func NewUserValidator() UserValidator {
 func (v *UserValidatorImpl) ValidateGetUserById(r *http.Request) (UserGetRequestBody, error) {
 	str := r.URL.Query().Get("id")
 	if str == "" {
-		return UserGetRequestBody{}, errIdParameterIsMissing
+		return UserGetRequestBody{},
+			statuserror.SetErrorMessage("missing id parameter",
+				statuserror.SetStatusError(statuserror.ErrorKindInvalidRequest,
+					errors.New("mssing id paramter")))
 	}
 
 	id, err := strconv.Atoi(str)
 	if err != nil {
-		return UserGetRequestBody{}, fmt.Errorf("failed to convert id to integer: %w", err)
+		return UserGetRequestBody{},
+			statuserror.SetErrorMessage("invalid id value",
+				statuserror.SetStatusError(statuserror.ErrorKindInvalidRequest,
+					fmt.Errorf("failed to convert id to integer: %w", err)))
 	}
 
 	return UserGetRequestBody{Id: id}, nil
@@ -78,8 +83,9 @@ func parseBody(err error, body io.ReadCloser, value any) error {
 	}
 	err = json.NewDecoder(body).Decode(&value)
 	if err != nil {
-		return fmt.Errorf("%w: failed to parse request body: %w",
-			ErrInvalidRequest, err)
+		return statuserror.SetErrorMessage("invalid request body",
+			statuserror.SetStatusError(statuserror.ErrorKindInvalidRequest,
+				errors.New("failed to parse request body")))
 	}
 	return nil
 }
@@ -89,8 +95,9 @@ func required[T any](err error, value *T, valueName string) error {
 		return err
 	}
 	if value == nil {
-		return fmt.Errorf("%w: missing field '%s' in request body",
-			ErrInvalidRequest, valueName)
+		return statuserror.SetErrorMessage(fmt.Sprintf("field %s is missing", valueName),
+			statuserror.SetStatusError(statuserror.ErrorKindInvalidRequest,
+				fmt.Errorf("missing field '%s' in request body", valueName)))
 	}
 	return nil
 }
@@ -102,7 +109,10 @@ func stringLength(err error, str *string, min int, max int, valueName string) er
 
 	strLen := len(*str)
 	if strLen < min || strLen > max {
-		return fmt.Errorf("%w: string '%s' length does not fit into constraints [%d, %d]", ErrInvalidRequest, valueName, min, max)
+		msg := fmt.Sprintf("string '%s' length does not fit into constraints [%d, %d]", valueName, min, max)
+		return statuserror.SetErrorMessage(msg,
+			statuserror.SetStatusError(statuserror.ErrorKindInvalidRequest,
+				errors.New(msg)))
 	}
 	return nil
 }
@@ -114,7 +124,10 @@ func intValue(err error, value *int, min int, max int, valueName string) error {
 
 	v := *value
 	if v < min || v > max {
-		return fmt.Errorf("%w: value '%s' does not fit into constraints [%d, %d]", ErrInvalidRequest, valueName, min, max)
+		msg := fmt.Sprintf("value '%s' does not fit into constraints [%d, %d]", valueName, min, max)
+		return statuserror.SetErrorMessage(msg,
+			statuserror.SetStatusError(statuserror.ErrorKindInvalidRequest,
+				errors.New(msg)))
 	}
 	return nil
 }
@@ -122,12 +135,18 @@ func intValue(err error, value *int, min int, max int, valueName string) error {
 func (v *UserValidatorImpl) ValidateDeleteUser(r *http.Request) (UserDeleteRequestBody, error) {
 	str := r.URL.Query().Get("id")
 	if str == "" {
-		return UserDeleteRequestBody{}, errIdParameterIsMissing
+		return UserDeleteRequestBody{},
+			statuserror.SetErrorMessage("missing id parameter",
+				statuserror.SetStatusError(statuserror.ErrorKindInvalidRequest,
+					errors.New("mssing id paramter")))
 	}
 
 	id, err := strconv.Atoi(str)
 	if err != nil {
-		return UserDeleteRequestBody{}, fmt.Errorf("failed to convert id to integer: %w", err)
+		return UserDeleteRequestBody{},
+			statuserror.SetErrorMessage("invalid id value",
+				statuserror.SetStatusError(statuserror.ErrorKindInvalidRequest,
+					fmt.Errorf("failed to convert id to integer: %w", err)))
 	}
 
 	return UserDeleteRequestBody{Id: id}, nil

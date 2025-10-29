@@ -2,7 +2,7 @@ package logic
 
 import (
 	"errors"
-	"fmt"
+	"handsongo/internal/statuserror"
 	"math/rand"
 )
 
@@ -15,10 +15,14 @@ func NewUserServiceStub() UserService {
 
 func (u *userServiceStubImpl) GetUserById(id int) (*User, error) {
 	if id == 404 {
-		return nil, fmt.Errorf("special case handling for 404 user id: %w", ErrUserNotFound)
+		return nil,
+			statuserror.SetErrorMessage("user not found",
+				statuserror.SetStatusError(
+					statuserror.ErrorKindNotFound,
+					errors.New("special case handling for 404 user id")))
 	}
 	if id == 500 {
-		return nil, errors.New("failed to get user")
+		return nil, statuserror.SetErrorMessage("failed to get user", errors.New("db error"))
 	}
 
 	return &User{
@@ -33,7 +37,7 @@ func (u *userServiceStubImpl) GetUserById(id int) (*User, error) {
 
 func (u *userServiceStubImpl) CreateUser(user *User) (int, error) {
 	if user.FirstName == "Invalid" {
-		return 0, errors.New("failed to create user")
+		return 0, statuserror.SetErrorMessage("failed to create user", errors.New("db error"))
 	}
 
 	return 1000 + rand.Intn(1000), nil
@@ -41,10 +45,13 @@ func (u *userServiceStubImpl) CreateUser(user *User) (int, error) {
 
 func (u *userServiceStubImpl) DeleteUser(id int) error {
 	if id == 404 {
-		return fmt.Errorf("special case handling for 404 user id: %w", ErrUserNotFound)
+		statuserror.SetErrorMessage("user not found",
+			statuserror.SetStatusError(
+				statuserror.ErrorKindNotFound,
+				errors.New("special case handling for 404 user id")))
 	}
 	if id == 500 {
-		return errors.New("failed to delete user")
+		return statuserror.SetErrorMessage("failed to delete user", errors.New("db error"))
 	}
 	return nil
 }

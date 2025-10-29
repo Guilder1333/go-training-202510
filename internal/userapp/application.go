@@ -26,6 +26,7 @@ func Run() {
 
 	// Shutdown HTTP server
 	// Teardown application
+	closeApplication(app)
 }
 
 func runServer(app *userApplication) {
@@ -60,9 +61,3 @@ func listenAndServe(server *http.Server, errchan chan error) {
 		errchan <- err
 	}
 }
-
-// TODO
-// Implement RUN
-// Implement runServer
-// Implement cannels with listenAndServe and handle errors
-// Take a rest until 15.35

@@ -2,12 +2,9 @@ package presentation
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"handsongo/internal/logic"
 	"net/http"
-	"strconv"
-
-	"github.com/rs/zerolog/log"
 )
 
 type getUserByIDResponse struct {
@@ -34,32 +31,19 @@ func NewUserController(validator UserValidator, userService logic.UserService) *
 	}
 }
 
-func (u *UserController) GetUserById(w http.ResponseWriter, r *http.Request) {
+func (u *UserController) GetUserById(w http.ResponseWriter, r *http.Request) error {
 	// 1. Get ID from request (query string)
 	//	1.1. if this is invalid -> return 400 response
 	getUserRequest, err := u.validator.ValidateGetUserById(r)
 	if err != nil {
-		log.Warn().Err(err).Msg("Passed user get by id parameters were invalid")
-		w.WriteHeader(400)
-		w.Write([]byte("request parameters validation failed"))
-		return
+		return fmt.Errorf("get user by id request parameters validation failed: %w", err)
 	}
 
 	// 2. Pass ID to business logic layer & get back a user
 	//    2.1. If user is not found -> return 404 response
 	user, err := u.userService.GetUserById(getUserRequest.Id)
 	if err != nil {
-		if errors.Is(err, logic.ErrUserNotFound) {
-			log.Warn().Err(err).Msg("Requesting non-existant user " + strconv.Itoa(getUserRequest.Id))
-			w.WriteHeader(404)
-			w.Write([]byte("user not found"))
-			return
-		}
-
-		log.Error().Err(err).Msg("Failed to get user")
-		w.WriteHeader(500)
-		w.Write([]byte("failed to get user"))
-		return
+		return fmt.Errorf("failed to get user by id=%d: %w", getUserRequest.Id, err)
 	}
 
 	// 3. Map user model to user JSON response model
@@ -75,24 +59,19 @@ func (u *UserController) GetUserById(w http.ResponseWriter, r *http.Request) {
 	//	body.
 	response, err := json.Marshal(userResponse)
 	if err != nil {
-		log.Error().Err(err).Msg("User response serialization failed")
-		w.WriteHeader(500)
-		w.Write([]byte("failed to make response"))
-		return
+		return err
 	}
 
 	w.WriteHeader(200)
 	w.Write(response)
+	return nil
 }
 
-func (u *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
+func (u *UserController) CreateUser(w http.ResponseWriter, r *http.Request) error {
 	// 1. Parse and validate request body
 	body, err := u.validator.ValidateCreateUser(r)
 	if err != nil {
-		log.Warn().Err(err).Msg("Passed user parameters were invalid")
-		w.WriteHeader(400)
-		w.Write([]byte("request parameters validation failed"))
-		return
+		return fmt.Errorf("create user request parameters validation failed: %w", err)
 	}
 	// 2. Pass data to userservice
 	user := logic.User{
@@ -105,10 +84,7 @@ func (u *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := u.userService.CreateUser(&user)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to create user")
-		w.WriteHeader(500)
-		w.Write([]byte("failed to create user"))
-		return
+		return fmt.Errorf("failed to create user")
 	}
 	// 3. Response with the new user ID.
 	response := createUserResponse{
@@ -116,39 +92,25 @@ func (u *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	responseBody, err := json.Marshal(response)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to serialize response")
-		w.WriteHeader(500)
-		w.Write([]byte("failed to serialize response"))
-		return
+		return err
 	}
 
 	w.WriteHeader(201)
 	w.Write(responseBody)
+	return nil
 }
 
-func (u *UserController) DeleteUserById(w http.ResponseWriter, r *http.Request) {
+func (u *UserController) DeleteUserById(w http.ResponseWriter, r *http.Request) error {
 	deleteUserRequest, err := u.validator.ValidateDeleteUser(r)
 	if err != nil {
-		log.Warn().Err(err).Msg("Passed user delete by id parameters were invalid")
-		w.WriteHeader(400)
-		w.Write([]byte("request parameters validation failed"))
-		return
+		return fmt.Errorf("delete user by id request parameters validation failed: %w", err)
 	}
 
 	err = u.userService.DeleteUser(deleteUserRequest.Id)
 	if err != nil {
-		if errors.Is(err, logic.ErrUserNotFound) {
-			log.Warn().Err(err).Msg("Requesting non-existant user " + strconv.Itoa(deleteUserRequest.Id))
-			w.WriteHeader(404)
-			w.Write([]byte("user not found"))
-			return
-		}
-
-		log.Error().Err(err).Msg("Failed to delete user")
-		w.WriteHeader(500)
-		w.Write([]byte("failed to delete user"))
-		return
+		return fmt.Errorf("failed to delete user by id %d: %w", deleteUserRequest.Id, err)
 	}
 
 	w.WriteHeader(204)
+	return nil
 }

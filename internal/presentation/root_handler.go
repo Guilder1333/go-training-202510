@@ -8,9 +8,9 @@ import (
 
 func NewRootHandler(userContoller *UserController) http.Handler {
 	router := chi.NewRouter()
-	router.Get("/user", userContoller.GetUserById)
-	router.Post("/user", userContoller.CreateUser)
-	router.Delete("/user", userContoller.DeleteUserById)
+	router.Get("/user", wrapErrorResponse(userContoller.GetUserById))
+	router.Post("/user", wrapErrorResponse(userContoller.CreateUser))
+	router.Delete("/user", wrapErrorResponse(userContoller.DeleteUserById))
 
 	return router
 }

@@ -26,12 +26,5 @@ func newUserApplication() (*userApplication, error) {
 }
 
 func closeApplication(app *userApplication) {
-	
-}
 
-// TODO
-// Until 13.30:
-// 1. Install Chi
-// 2. Add routes in newrootHandler
-// 3. add NewUserValidator if you also forgot to do it.
-// 4. Init user conroller in newUserApplication 
+}

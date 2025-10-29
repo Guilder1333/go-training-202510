@@ -1,9 +1,5 @@
 package logic
 
-import "errors"
-
-var ErrUserNotFound = errors.New("user not found")
-
 type User struct {
 	Id              int
 	FirstName       string
